@@ -62,39 +62,43 @@ public class Server {
             
             String message = new String(packet.getData(), 0, packet.getLength());
             String[] messageParts = message.split(" ");
+            List<String> messageList = new ArrayList<String>(Arrays.asList(messageParts));
+            String[] messageName = message.split(" FROM: ");
 
-            if(messageParts.length > 1){
-                switch(messageParts[0]) {
-                    case "New":
-                        // Check if user allready exsits else add person
-                        if(addClient(messageParts[1], packet.getAddress(), packet.getPort())) {
-                            System.out.println("New user connected!" + messageParts[1]);
-                            sendPrivateMessage("Success", messageParts[1]);
-                        } else {
-                            System.out.println("Failed to connect user.");  
-                            sendUsernameTakenMessage(packet.getAddress(), packet.getPort());
-                        }
-                        break;
-                    case "/tell":
-                        List<String> messageList = new ArrayList<String>(Arrays.asList(messageParts));
+            switch(messageParts[0]) {
+                case "New":
+                    // Check if user allready exsits else add person
+                    if(addClient(messageParts[1], packet.getAddress(), packet.getPort())) {
+                        System.out.println("New user connected!" + messageParts[1]);
+                        sendPrivateMessage("Success", messageParts[1]);
+                    } else {
+                        System.out.println("Failed to connect user.");  
+                        sendUsernameTakenMessage(packet.getAddress(), packet.getPort());
+                    }
+                    break;
+                case "/tell":
+                    messageList.remove(messageParts[0]);
+                    messageList.remove(messageParts[1]);
+                    messageList.remove("FROM:");
+                    messageList.remove(messageName[1]);
 
-                        messageList.remove(messageParts[0]);
-                        messageList.remove(messageParts[1]);
+                    message = String.join(" ", messageList);
 
-                        message = String.join(" ", messageList);
+                    // Add from name to the message
+                    message = messageName[1] + ": " + message;
 
-                        sendPrivateMessage(message, messageParts[1]);
-                        System.out.println(message + "Sent");
-                        // Get confirmation that the user got the message (Message sent back) else resend
+                    sendPrivateMessage(message, messageParts[1]);
+                    // Get confirmation that the user got the message (Message sent back) else resend
 
-                        break;
-                    default:
-                        break;
-                }   
-            } else {
-                broadcast(message);
-                System.out.println(message);    
-            }  
+                    break;
+                default:
+                    messageList.remove("FROM:");
+                    messageList.remove(messageName[1]);
+                    message = String.join(" ", messageList);
+                    message = messageName[1] + ": " + message;
+                    broadcast(message);
+                    break;
+            }   
         } while (true);
     }
 

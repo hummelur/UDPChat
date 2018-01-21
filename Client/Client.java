@@ -4,6 +4,7 @@ import java.awt.event.*;
 
 /*
 	Kolla om medelandet läggs till i guin annars skicka till servern att medelandet måste skickas om
+	När användaren skickar ett privat medelande skall han få sitt eget svar också. Inte bara på motagaren
 */
 
 public class Client implements ActionListener {
@@ -11,6 +12,8 @@ public class Client implements ActionListener {
 	private String m_name = null;
 	private final ChatGUI m_GUI;
 	private ServerConnection m_connection = null;
+	private boolean handshake = true;
+	private String[] connectioninfo;
 
 	public static void main(String[] args) {
 		if (args.length < 3) {
@@ -36,14 +39,23 @@ public class Client implements ActionListener {
 
 	private void connectToServer(String hostName, int port) {
 		// Create a new server connection
-		m_connection = new ServerConnection(hostName, port);
+		if (handshake) {
+			m_connection = new ServerConnection(hostName, port);
+		}
 
 		if (m_connection.handshake(m_name)) {
 			System.out.println("Success of handshake");
+
+			if (!handshake) {
+				m_GUI.displayMessage("Username taken you've been assigned a new username: " + m_name);
+			}
+
+			handshake = true;
 			listenForServerMessages();
 		} else {
-			// TODO: DISPLAY THAT USERNAME IS TAKEN AND WRITE IN INPUT FIELD THE NEW USERNAME
-			m_GUI.displayMessage("Username is taken please choose anotherone!");
+			handshake = false;
+			m_name =  m_name + "1";
+			connectToServer(hostName, port);
 		}
 	}
 
@@ -51,7 +63,7 @@ public class Client implements ActionListener {
 		// Use the code below once m_connection.receiveChatMessage() has been
 		// implemented properly.
 		do {
-			m_GUI.displayMessage(m_name + ": " + m_connection.receiveChatMessage());
+			m_GUI.displayMessage(m_connection.receiveChatMessage());
 		} while(true);
 	}
 
@@ -62,7 +74,8 @@ public class Client implements ActionListener {
 		// Since the only possible event is a carriage return in the text input
 		// field,
 		// the text in the chat input field can now be sent to the server.
-		m_connection.sendChatMessage(m_GUI.getInput());
+		
+		m_connection.sendChatMessage(m_GUI.getInput() + " FROM: " + m_name);
 		m_GUI.clearInput();
 	}
 }

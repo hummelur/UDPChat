@@ -60,7 +60,6 @@ public class ServerConnection {
 				System.out.println("Error while user getting reponse from server.");
 			}
 			String response = unmarshallMessage(packet);
-			System.out.println(response);
 			return response;
 		} while(true);
 	}
