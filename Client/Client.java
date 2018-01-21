@@ -13,7 +13,6 @@ public class Client implements ActionListener {
 	private final ChatGUI m_GUI;
 	private ServerConnection m_connection = null;
 	private boolean handshake = true;
-	private String[] connectioninfo;
 
 	public static void main(String[] args) {
 		if (args.length < 3) {
@@ -43,18 +42,21 @@ public class Client implements ActionListener {
 			m_connection = new ServerConnection(hostName, port);
 		}
 
-		if (m_connection.handshake(m_name)) {
+		ServerConnection.HandshakeStatus status = m_connection.handshake(m_name);
+
+		if (status == ServerConnection.HandshakeStatus.SUCCESS) {
 			System.out.println("Success of handshake");
 
 			if (!handshake) {
 				m_GUI.displayMessage("Username taken you've been assigned a new username: " + m_name);
 			}
-
-			handshake = true;
 			listenForServerMessages();
-		} else {
+		} else if (status == ServerConnection.HandshakeStatus.USERNAMETAKEN) {
 			handshake = false;
 			m_name =  m_name + "1";
+			connectToServer(hostName, port);
+		} else if (status == ServerConnection.HandshakeStatus.FAIL){
+			m_GUI.displayMessage("Handshake failed. Reconnecting...");
 			connectToServer(hostName, port);
 		}
 	}

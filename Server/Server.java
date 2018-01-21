@@ -42,7 +42,7 @@ public class Server {
     private void listenForClientMessages() {
         System.out.println("Waiting for client messages... ");
         
-        byte[] buffer = new byte[2048];
+        byte[] buffer = new byte[1024];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
         do {
@@ -62,23 +62,24 @@ public class Server {
             
             String message = new String(packet.getData(), 0, packet.getLength());
             String[] messageParts = message.split(" ");
-            List<String> messageList = new ArrayList<String>(Arrays.asList(messageParts));
+            List<String> messageList = new ArrayList<String>(Arrays.asList(message.split(" ")));
             String[] messageName = message.split(" FROM: ");
+            String messageTo = messageList.get(1);
 
-            switch(messageParts[0]) {
+            switch(messageList.get(0)) {
                 case "New":
                     // Check if user allready exsits else add person
-                    if(addClient(messageParts[1], packet.getAddress(), packet.getPort())) {
-                        System.out.println("New user connected!" + messageParts[1]);
-                        sendPrivateMessage("Success", messageParts[1]);
+                    if(addClient(messageList.get(1), packet.getAddress(), packet.getPort())) {
+                        System.out.println("New user connected: " + messageList.get(1));
+                        sendPrivateMessage("Success", messageTo);
                     } else {
                         System.out.println("Failed to connect user.");  
                         sendUsernameTakenMessage(packet.getAddress(), packet.getPort());
                     }
                     break;
                 case "/tell":
-                    messageList.remove(messageParts[0]);
-                    messageList.remove(messageParts[1]);
+                    messageList.remove(messageList.get(0));
+                    messageList.remove(messageList.get(0));
                     messageList.remove("FROM:");
                     messageList.remove(messageName[1]);
 
@@ -87,9 +88,9 @@ public class Server {
                     // Add from name to the message
                     message = messageName[1] + ": " + message;
 
-                    sendPrivateMessage(message, messageParts[1]);
-                    // Get confirmation that the user got the message (Message sent back) else resend
-
+                    sendPrivateMessage(message, messageTo);
+                    sendPrivateMessage(message, messageName[1]);
+                    // Get confirmation that the user got the message (Message sent back) else resendTopDownLeftRight()
                     break;
                 default:
                     messageList.remove("FROM:");

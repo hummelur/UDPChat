@@ -1,4 +1,5 @@
 import java.net.*;
+import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Random;
@@ -16,6 +17,10 @@ public class ServerConnection {
 	private InetAddress m_serverAddress = null;
 	private int m_serverPort = -1;
 
+	public enum HandshakeStatus {
+		SUCCESS, USERNAMETAKEN, FAIL
+	}
+
 	public ServerConnection(String hostName, int port) {
 		m_serverPort = port;
 
@@ -27,7 +32,7 @@ public class ServerConnection {
 		}
 	}
 
-	public boolean handshake(String name) {
+	public HandshakeStatus handshake(String name) {
 		String msg = "New " + name;
 		DatagramPacket packet = marshallMessage(msg);
 
@@ -40,25 +45,27 @@ public class ServerConnection {
 		String response = receiveChatMessage();
 
 		if (response.equals("Success")) {
-			return true;
+			return HandshakeStatus.SUCCESS;
 		} else if(response.equals("UsernameTaken")) {
 			System.out.println("Username Taken.");
-			return false;	
+			return HandshakeStatus.USERNAMETAKEN;
 		} 
 
-		return false;
+		return HandshakeStatus.FAIL;
 	}
 
 	public String receiveChatMessage() {
-		byte[] buffer = new byte[1048];
+		byte[] buffer = new byte[1024];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
 		do {
 			try {
+				System.out.println("Hello");
 				m_socket.receive(packet);	
 			} catch (Exception e) {
 				System.out.println("Error while user getting reponse from server.");
 			}
+
 			String response = unmarshallMessage(packet);
 			return response;
 		} while(true);
@@ -73,17 +80,17 @@ public class ServerConnection {
 
 			try {
 				m_socket.send(packet);
-			} catch (Exception e){
-				System.out.println("IOException: " + e);
+			} catch (IOException e){
+				System.out.println("IOException: " + e.getMessage());
 			}
 		} else {
 			// Message got lost resend message
-			sendChatMessage(message);
+			System.out.println("MEssage is gone.");
 		}
 	}
 
 	public DatagramPacket marshallMessage(String message) {
-		byte[] buffer = new byte[2048];
+		byte[] buffer = new byte[1024];
 		buffer = message.getBytes();
 
 		return new DatagramPacket(buffer, buffer.length, m_serverAddress, m_serverPort);
@@ -92,5 +99,4 @@ public class ServerConnection {
 	public String unmarshallMessage(DatagramPacket packet) {
 		return new String(packet.getData(), 0, packet.getLength());
 	}
-
 }
